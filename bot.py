@@ -7,7 +7,7 @@ TELEGRAM_CHAT_ID = os.getenv("TG_CHAT")
 
 
 def run():
-  print("--- ЗАПУСК БОТА С ОРИГИНАЛЬНЫМИ МЕМАМИ ---")
+  print("--- ЗАПУСК БОТА С ТОЧНЫМИ МЕМАМИ ---")
   if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
     print("❌ Ошибка: Не заданы секреты TG_TOKEN или TG_CHAT!")
     return
@@ -17,6 +17,7 @@ def run():
     with open("sent_memes.txt", "r", encoding="utf-8") as f:
       sent_memes = set(line.strip() for line in f if line.strip())
 
+  # Отборные мемы с визуалом, идеально подходящим под контекст TCG и коллекционирования
   real_memes = [
       {
           "title": (
@@ -24,7 +25,7 @@ def run():
               " booster box anyway:"
           ),
           "image_url": (
-              "https://images.unsplash.com/photo-1563089145-599997674d42?w=1000&auto=format&fit=crop&q=80"
+              "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1000&auto=format&fit=crop&q=80"
           ),
           "link": "https://reddit.com/r/pokemonmemes",
       },
@@ -34,8 +35,8 @@ def run():
               " costs more than a used car"
           ),
           "image_url": (
-              "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1000&auto=format&fit=crop&q=80"
-          ),
+              "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1000&auto=format&fit=crop&q=80"
+          ),  # Тема финансов/денег, идеально подходит к объяснению цен
           "link": "https://reddit.com/r/pkmntcgmemes",
       },
       {
@@ -44,8 +45,8 @@ def run():
               " cents"
           ),
           "image_url": (
-              "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1000&auto=format&fit=crop&q=80"
-          ),
+              "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000&auto=format&fit=crop&q=80"
+          ),  # Разочарование и драма
           "link": "https://reddit.com/r/pokemonmemes",
       },
       {
@@ -54,7 +55,7 @@ def run():
               " washing their hands first"
           ),
           "image_url": (
-              "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1000&auto=format&fit=crop&q=80"
+              "https://images.unsplash.com/photo-1563089145-599997674d42?w=1000&auto=format&fit=crop&q=80"
           ),
           "link": "https://reddit.com/r/pokemonmemes",
       },
