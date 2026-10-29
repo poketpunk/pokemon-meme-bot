@@ -17,7 +17,6 @@ def run():
     with open("sent_memes.txt", "r", encoding="utf-8") as f:
       sent_memes = set(line.strip() for line in f if line.strip())
 
-  # Золотой фонд мемов на английском — без искажений и кривого перевода
   real_memes = [
       {
           "title": (
@@ -91,11 +90,38 @@ def run():
       f"🔗 [Meme Source]({link})"
   )
 
-  # Скачиваем картинку
   try:
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         )
     }
-    img_response = requests.get(image_url, headers=headers, timeout=2
+    img_response = requests.get(image_url, headers=headers, timeout=20)
+    if img_response.status_code != 200:
+      print(f"❌ Ошибка загрузки картинки: {img_response.status_code}")
+      return
+    image_bytes = img_response.content
+  except Exception as e:
+    print(f"❌ Ошибка скачивания: {e}")
+    return
+
+  url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
+  payload = {
+      "chat_id": TELEGRAM_CHAT_ID,
+      "caption": caption,
+      "parse_mode": "Markdown",
+  }
+  files = {"photo": ("meme.jpg", image_bytes, "image/jpeg")}
+
+  response = requests.post(url, data=payload, files=files)
+  print(f"Ответ Telegram API: {response.status_code}")
+
+  if response.status_code == 200:
+    print("✅ УСПЕШНО! Мем отправлен в канал.")
+    with open("sent_memes.txt", "a", encoding="utf-8") as f:
+      f.write(meme_data["image_url"] + "\n")
+  else:
+    print(f"❌ Ошибка Telegram: {response.text}")
+
+
+run()
