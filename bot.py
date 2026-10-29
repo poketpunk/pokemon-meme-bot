@@ -18,13 +18,14 @@ def generate_ai_joke():
       " бустеров или слив денег на картон. Без лишних вводных фраз."
   )
 
-  # Используем актуальную модель Gemini 3.8 Flash
-  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={GEMINI_API_KEY}"
+  # Используем стабильную и быструю flash-модель
+  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
   headers = {"Content-Type": "application/json"}
   payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
   try:
-    response = requests.post(url, json=payload, headers=headers, timeout=20)
+    # Увеличили таймаут до 40 секунд, чтобы сервер успел ответить
+    response = requests.post(url, json=payload, headers=headers, timeout=40)
     print(f"Ответ от Gemini API: {response.status_code}")
 
     if response.status_code == 200:
@@ -51,7 +52,7 @@ def run():
     print("⚠️ Сработал резервный вариант (ИИ недоступен).")
     joke_text = "Когда потратил всю зарплату на бокс, а там снова одни комонки."
   else:
-    print("✅ Успешно сгенерировано через Gemini 3.8 Flash!")
+    print("✅ Успешно сгенерировано через ИИ!")
 
   print(f"Итоговая шутка: {joke_text}")
 
