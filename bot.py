@@ -4,123 +4,97 @@ import requests
 
 TELEGRAM_BOT_TOKEN = os.getenv("TG_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TG_CHAT")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+
+def generate_ai_joke():
+  """Генерирует уникальную шутку про Pokémon TCG с помощью Gemini API"""
+  if not GEMINI_API_KEY:
+    print(
+        "⚠️ GEMINI_API_KEY не найден, используем резервную элитную шутку из"
+        " базы."
+    )
+    fallback_jokes = [
+        (
+            "My brain: 'Save money for rent.'\nMy heart: 'What if the next"
+            " booster pack has a secret rare Charizard?'\nWallet: *cries in"
+            " bankruptcy*"
+        ),
+        (
+            "When someone handles your PSA 10 graded card without gloves and"
+            " you have to consider legal action."
+        ),
+        (
+            "The 4 stages of TCG collecting: Hope, Regret, Opening another"
+            " booster box, Repeat."
+        ),
+    ]
+    return random.choice(fallback_jokes)
+
+  prompt = (
+      "Write a short, hilarious, and relatable English meme text (2-4 lines)"
+      " about the pain and obsession of collecting Pokémon TCG cards, opening"
+      " booster packs, spending all money on cardboard, or dealing with rare"
+      " cards. Keep it authentic to Reddit meme culture. Do not include"
+      " introductory filler text, just give the joke itself."
+  )
+
+  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+  headers = {"Content-Type": "application/json"}
+  payload = {"contents": [{"parts": [{"text": prompt}]}]}
+
+  try:
+    response = requests.post(url, json=payload, headers=headers, timeout=20)
+    if response.status_code == 200:
+      data = response.json()
+      joke = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+      return joke
+    else:
+      print(f"❌ Ошибка API ИИ: {response.status_code} - {response.text}")
+  except Exception as e:
+    print(f"❌ Ошибка соединения с ИИ: {e}")
+
+  return (
+      "When you spend your last money on a booster box and pull 50 common"
+      " Zubats."
+  )
 
 
 def run():
-  print("--- ЗАПУСК БОТА С ТОЧНЫМИ МЕМАМИ ---")
+  print("--- ЗАПУСК ИИ-БОТА С БЕСКОНЕЧНЫМИ МЕМАМИ ---")
   if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
     print("❌ Ошибка: Не заданы секреты TG_TOKEN или TG_CHAT!")
     return
 
-  sent_memes = set()
-  if os.path.exists("sent_memes.txt"):
-    with open("sent_memes.txt", "r", encoding="utf-8") as f:
-      sent_memes = set(line.strip() for line in f if line.strip())
-
-  # Отборные мемы с визуалом, идеально подходящим под контекст TCG и коллекционирования
-  real_memes = [
-      {
-          "title": (
-              "My brain: You already have 50 Charizards.\nMe buying another"
-              " booster box anyway:"
-          ),
-          "image_url": (
-              "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1000&auto=format&fit=crop&q=80"
-          ),
-          "link": "https://reddit.com/r/pokemonmemes",
-      },
-      {
-          "title": (
-              "When you try to explain to your mom why a piece of cardboard"
-              " costs more than a used car"
-          ),
-          "image_url": (
-              "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=1000&auto=format&fit=crop&q=80"
-          ),  # Тема финансов/денег, идеально подходит к объяснению цен
-          "link": "https://reddit.com/r/pkmntcgmemes",
-      },
-      {
-          "title": (
-              "Me opening a $200 booster box just to pull common cards worth 5"
-              " cents"
-          ),
-          "image_url": (
-              "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1000&auto=format&fit=crop&q=80"
-          ),  # Разочарование и драма
-          "link": "https://reddit.com/r/pokemonmemes",
-      },
-      {
-          "title": (
-              "When someone touches your graded PSA 10 collection without"
-              " washing their hands first"
-          ),
-          "image_url": (
-              "https://images.unsplash.com/photo-1563089145-599997674d42?w=1000&auto=format&fit=crop&q=80"
-          ),
-          "link": "https://reddit.com/r/pokemonmemes",
-      },
-  ]
-
-  available_memes = [
-      m for m in real_memes if m["image_url"] not in sent_memes
-  ]
-  if not available_memes:
-    print("🔄 Сбрасываем историю отправленных мемов...")
-    if os.path.exists("sent_memes.txt"):
-      os.remove("sent_memes.txt")
-    available_memes = real_memes
-
-  meme_data = random.choice(available_memes)
-
-  title = meme_data["title"]
-  image_url = meme_data["image_url"]
-  link = meme_data["link"]
-
-  print(f"🔥 Публикуем мем: {title}")
+  # Генерируем уникальную шутку на лету
+  joke_text = generate_ai_joke()
+  print(f"🔥 Сгенерирована свежая шутка:\n{joke_text}")
 
   intros = [
-      "😂 **Pure TCG collector vibes:**",
-      "💀 **When reality hits harder than a rare card:**",
-      "📦 **Every card collector's pain:**",
-      "🔥 **Typical pack opening experience:**",
+      "😂 **AI-generated TCG pain:**",
+      "💀 **Fresh from the neural network collector brain:**",
+      "📦 **Today's wisdom for Pokémon card addicts:**",
+      "🔥 **Generated pure unfiltered collector reality:**",
   ]
 
-  caption = (
+  message = (
       f"{random.choice(intros)}\n\n"
-      f"📌 **{title}**\n\n"
-      f"🔗 [Meme Source]({link})"
+      f"📌 {joke_text}\n\n"
+      f"💬 *А какая карта снится вам? Делитесь в комментариях!*"
   )
 
-  try:
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        )
-    }
-    img_response = requests.get(image_url, headers=headers, timeout=20)
-    if img_response.status_code != 200:
-      print(f"❌ Ошибка загрузки картинки: {img_response.status_code}")
-      return
-    image_bytes = img_response.content
-  except Exception as e:
-    print(f"❌ Ошибка скачивания: {e}")
-    return
-
-  url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
+  url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
   payload = {
       "chat_id": TELEGRAM_CHAT_ID,
-      "caption": caption,
+      "text": message,
       "parse_mode": "Markdown",
   }
-  files = {"photo": ("meme.jpg", image_bytes, "image/jpeg")}
 
-  response = requests.post(url, data=payload, files=files)
+  response = requests.post(url, json=payload)
   print(f"Ответ Telegram API: {response.status_code}")
 
   if response.status_code == 200:
-    print("✅ УСПЕШНО! Мем отправлен в канал.")
-    with open("sent_memes.txt", "a", encoding="utf-8") as f:
-      f.write(meme_data["image_url"] + "\n")
+    print("✅ УСПЕШНО! Уникальный сгенерированный мем опубликован в канале.")
   else:
     print(f"❌ Ошибка Telegram: {response.text}")
 
