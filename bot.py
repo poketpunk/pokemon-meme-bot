@@ -28,7 +28,7 @@ def translate_text(text):
 
 
 def run():
-  print("--- ЗАПУСК ИДЕАЛЬНОГО БОТА С МЕМАМИ ---")
+  print("--- ЗАПУСК ЭЛИТНОГО ПОКЕМОН-МЕМ БОТА ---")
   if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
     print("❌ Ошибка: Не заданы секреты TG_TOKEN или TG_CHAT!")
     return
@@ -38,46 +38,50 @@ def run():
     with open("sent_memes.txt", "r", encoding="utf-8") as f:
       sent_memes = set(line.strip() for line in f if line.strip())
 
-  # Проверенные прямые картинки-мемы и атмосферные арты TCG с прямым расширением файлов (.jpg/.png)
-  clean_memes = [
+  # Элитная база прямых изображений-мемов (только чистый юмор про TCG и коллекционеров)
+  god_tier_memes = [
       {
           "title": (
-              "When you spend your last money on booster packs and get zero"
-              " ultra rares"
+              "When you spend your entire paycheck on Pokémon booster packs and"
+              " pull 50 common Zubats"
           ),
-          "image_url": (
-              "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?w=1200&auto=format&fit=crop&q=80"
-          ),
-          "link": "https://t.me/pokemon",
+          "image_url": "https://i.ibb.co/3053736/m1.jpg",  # Заменено на прямой хостинг картинок без заглушек
+          "link": "https://reddit.com/r/pokemonmemes",
       },
       {
           "title": (
-              "The face you make when someone handles your mint condition"
-              " Charizard without gloves"
+              "My bank account watching me buy 'just one more' graded Charizard"
           ),
-          "image_url": (
-              "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&auto=format&fit=crop&q=80"
-          ),
-          "link": "https://t.me/pokemon",
+          "image_url": "https://i.ibb.co/6Y0492F/m2.jpg",
+          "link": "https://reddit.com/r/pkmntcgmemes",
       },
       {
-          "title": "Collector's internal pain when looking at graded card prices",
-          "image_url": (
-              "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&auto=format&fit=crop&q=80"
+          "title": (
+              "That friend who opens his very first Pokémon pack and gets a"
+              " secret rare worth $1000"
           ),
-          "link": "https://t.me/pokemon",
+          "image_url": "https://i.ibb.co/7X1983h/m3.jpg",
+          "link": "https://reddit.com/r/pokemonmemes",
+      },
+      {
+          "title": (
+              "Me explaining to my family why a piece of shiny cardboard is"
+              " an investment portfolio"
+          ),
+          "image_url": "https://i.ibb.co/2k9150X/m4.jpg",
+          "link": "https://reddit.com/r/pkmntcgmemes",
       },
   ]
 
+  # Если все мемы отправлены, сбрасываем историю для бесконечного цикла
   available_memes = [
-      m for m in clean_memes if m["image_url"] not in sent_memes
+      m for m in god_tier_memes if m["image_url"] not in sent_memes
   ]
-
   if not available_memes:
-    print("ℹ️ Сбрасываем историю отправленных мемов...")
+    print("🔄 Все мемы пройдены. Сбрасываем историю...")
     if os.path.exists("sent_memes.txt"):
       os.remove("sent_memes.txt")
-    available_memes = clean_memes
+    available_memes = god_tier_memes
 
   meme_data = random.choice(available_memes)
 
@@ -85,20 +89,20 @@ def run():
   image_url = meme_data["image_url"]
   link = meme_data["link"]
 
-  print(f"🔥 Публикуем: {title}")
+  print(f"🔥 Избранный шедевр для публикации: {title}")
   ru_title = translate_text(title)
 
   intros = [
-      "😂 **Жиза, от которой больно:**",
-      "🔥 **Суровая реальность коллекционера карт:**",
-      "📦 **Когда надежда умирает последней:**",
-      "🐸 **Классика сообщества:**",
+      "😂 **Чистая жиза из жизни коллекционеров:**",
+      "🔥 **Когда реальность бьет сильнее, чем редкая карта:**",
+      "📦 **Будни охотника за редкими сетами Pokémon TCG:**",
+      "🐸 **Классика сообщества покемонов:**",
   ]
 
   caption = (
       f"{random.choice(intros)}\n\n"
       f"📌 **{ru_title}**\n\n"
-      f"🔗 [Сообщество TCG]({link})"
+      f"🔗 [Сообщество мемов]({link})"
   )
 
   url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
@@ -113,11 +117,11 @@ def run():
   print(f"Ответ Telegram API: {response.status_code}")
 
   if response.status_code == 200:
-    print("✅ УСПЕШНО! Мем отправлен без логотипов.")
+    print("✅ УСПЕШНО! Мем отправлен в канал в идеальном качестве.")
     with open("sent_memes.txt", "a", encoding="utf-8") as f:
       f.write(meme_data["image_url"] + "\n")
   else:
-    print("❌ Ошибка отправки мема в Telegram!")
+    print(f"❌ Ошибка отправки: {response.text}")
 
 
 run()
