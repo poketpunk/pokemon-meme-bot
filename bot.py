@@ -1,7 +1,6 @@
 import os
 import random
 from google import genai
-from google.genai import errors
 import requests
 
 TELEGRAM_BOT_TOKEN = os.getenv("TG_TOKEN")
@@ -14,7 +13,6 @@ def generate_ai_joke():
     print("❌ ОШИБКА: Переменная GEMINI_API_KEY не задана!")
     return None
 
-  # Инициализируем официальный клиент Google GenAI
   client = genai.Client(api_key=GEMINI_API_KEY)
 
   prompt = (
@@ -23,21 +21,19 @@ def generate_ai_joke():
       " бустеров или слив денег на картон. Без лишних вводных фраз."
   )
 
-  # Пробуем получить ответ через официальный клиент (он сам выбирает актуальную модель)
-  models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash"]
+  # Используем строго актуальную и требуемую сервером версию gemini-3.8-flash
+  model_name = "gemini-3.8-flash"
 
-  for model_name in models_to_try:
-    try:
-      print(f"Попытка генерации через модель: {model_name}")
-      response = client.models.generate_content(
-          model=model_name,
-          contents=prompt,
-      )
-      if response and response.text:
-        return response.text.strip()
-    except Exception as e:
-      print(f"❌ Ошибка с моделью {model_name}: {e}")
-      continue
+  try:
+    print(f"Попытка генерации через модель: {model_name}")
+    response = client.models.generate_content(
+        model=model_name,
+        contents=prompt,
+    )
+    if response and response.text:
+      return response.text.strip()
+  except Exception as e:
+    print(f"❌ Ошибка при запросе к модели {model_name}: {e}")
 
   return None
 
@@ -50,7 +46,7 @@ def run():
 
   joke_text = generate_ai_joke()
 
-  # Если ИИ не ответил, честно отменяем публикацию без заглушек
+  # Если ИИ недоступен, честно отменяем публикацию без заглушек
   if not joke_text:
     print(
         "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось получить шутку от ИИ. Публикация"
@@ -58,7 +54,7 @@ def run():
     )
     return
 
-  print(f"✅ Успешно сгенерировано:\n{joke_text}")
+  print(f"✅ Успешно сгенерировано через Gemini 3.8 Flash:\n{joke_text}")
 
   intros = [
       "😂 **Чистая жиза из жизни коллекционеров:**",
