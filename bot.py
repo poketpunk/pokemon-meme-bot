@@ -1,5 +1,6 @@
 import os
 import random
+import time
 import requests
 
 TELEGRAM_BOT_TOKEN = os.getenv("TG_TOKEN")
@@ -18,23 +19,31 @@ def generate_ai_joke():
       " бустеров или слив денег на картон. Без лишних вводных фраз."
   )
 
-  # Возвращаем актуальную и требуемую сервером Google модель gemini-3.8-flash
-  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={GEMINI_API_KEY}"
+  # Используем стабильную версию flash-модели
+  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
   headers = {"Content-Type": "application/json"}
   payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
-  try:
-    response = requests.post(url, json=payload, headers=headers, timeout=40)
-    print(f"Ответ от Gemini API: {response.status_code}")
+  # Делаем до 3 попыток в случае ошибки высокой нагрузки (503)
+  for attempt in range(1, 4):
+    try:
+      print(f"Попытка запроса к Gemini №{attempt}...")
+      response = requests.post(url, json=payload, headers=headers, timeout=30)
+      print(f"Ответ от Gemini API: {response.status_code}")
 
-    if response.status_code == 200:
-      data = response.json()
-      joke = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-      return joke
-    else:
-      print(f"❌ Ошибка ответа Gemini: {response.text}")
-  except Exception as e:
-    print(f"❌ Исключение при запросе к ИИ: {e}")
+      if response.status_code == 200:
+        data = response.json()
+        joke = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        return joke
+      else:
+        print(f"❌ Ошибка ответа Gemini: {response.text}")
+        # Если сервер перегружен (503), ждем 3 секунды и пробуем снова
+        if response.status_code == 503:
+          time.sleep(3)
+          continue
+    except Exception as e:
+      print(f"❌ Исключение при запросе к ИИ: {e}")
+      time.sleep(3)
 
   return None
 
@@ -48,10 +57,10 @@ def run():
   joke_text = generate_ai_joke()
 
   if not joke_text:
-    print("⚠️ Сработал резервный вариант (ИИ недоступен).")
+    print("⚠️ Сработал резервный вариант (ИИ временно перегружен).")
     joke_text = "Когда потратил всю зарплату на бокс, а там снова одни комонки."
   else:
-    print("✅ Успешно сгенерировано через Gemini 3.8 Flash!")
+    print("✅ Успешно сгенерировано через ИИ!")
 
   print(f"Итоговая шутка: {joke_text}")
 
