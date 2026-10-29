@@ -1,44 +1,49 @@
 import os
 import random
-import time
-from google import genai
 import requests
 
 TELEGRAM_BOT_TOKEN = os.getenv("TG_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TG_CHAT")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")  # Используем ключ DeepSeek
 
 
 def generate_ai_joke():
-  if not GEMINI_API_KEY:
-    print("❌ ОШИБКА: Переменная GEMINI_API_KEY не задана!")
+  if not DEEPSEEK_API_KEY:
+    print("❌ ОШИБКА: Переменная DEEPSEEK_API_KEY не задана!")
     return None
 
-  client = genai.Client(api_key=GEMINI_API_KEY)
+  url = "https://api.deepseek.com/chat/completions"
+  headers = {
+      "Content-Type": "application/json",
+      "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+  }
 
-  prompt = (
-      "Напиши короткую, очень смешную и жизненную шутку (на русском языке,"
-      " 2-3 строчки) про боль коллекционеров карточек Pokémon TCG, открытие"
-      " бустеров или слив денег на картон. Без лишних вводных фраз."
-  )
+  payload = {
+      "model": "deepseek-chat",  # Стабильная модель DeepSeek-V3
+      "messages": [{
+          "role": "user",
+          "content": (
+              "Напиши короткую, очень смешную и жизненную шутку (на русском языке,"
+              " 2-3 строчки) про боль коллекционеров карточек Pokémon TCG, открытие"
+              " бустеров или слив денег на картон. Без лишних вводных фраз."
+          ),
+      }],
+      "stream": False,
+  }
 
-  model_name = "gemini-3.8-flash"
+  try:
+    print("Отправка запроса в DeepSeek API...")
+    response = requests.post(url, json=payload, headers=headers, timeout=30)
+    print(f"Ответ от DeepSeek API: {response.status_code}")
 
-  # Делаем до 3 попыток на случай кратковременной перегрузки сервера
-  for attempt in range(1, 4):
-    try:
-      print(f"Попытка генерации через {model_name} (попытка {attempt})...")
-      response = client.models.generate_content(
-          model=model_name,
-          contents=prompt,
-      )
-      if response and response.text:
-        return response.text.strip()
-    except Exception as e:
-      print(f"❌ Ошибка на попытке {attempt}: {e}")
-      # Если сервер перегружен, ждем 4 секунды перед повтором
-      if attempt < 3:
-        time.sleep(4)
+    if response.status_code == 200:
+      data = response.json()
+      joke = data["choices"][0]["message"]["content"].strip()
+      return joke
+    else:
+      print(f"❌ Ошибка ответа DeepSeek: {response.text}")
+  except Exception as e:
+    print(f"❌ Исключение при запросе к DeepSeek: {e}")
 
   return None
 
@@ -51,15 +56,15 @@ def run():
 
   joke_text = generate_ai_joke()
 
-  # Если все попытки провалились, честно отменяем публикацию без заглушек
+  # Если ИИ не ответил, честно отменяем публикацию без заглушек
   if not joke_text:
     print(
-        "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось получить шутку от ИИ после 3 попыток."
-        " Публикация отменена."
+        "❌ КРИТИЧЕСКАЯ ОШИБКА: DeepSeek недоступен. Публикация отменена без"
+        " заглушек."
     )
     return
 
-  print(f"✅ Успешно сгенерировано через Gemini 3.8 Flash:\n{joke_text}")
+  print(f"✅ Успешно сгенерировано через DeepSeek:\n{joke_text}")
 
   intros = [
       "😂 **Чистая жиза из жизни коллекционеров:**",
