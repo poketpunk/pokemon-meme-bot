@@ -9,10 +9,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 def generate_ai_joke():
   if not GEMINI_API_KEY:
-    return (
-        "Мой мозг: 'Давай отложим деньги.'\nМое сердце: 'А вдруг в бустере"
-        " секретный Чаризард?'\nКошелек: *плачет*"
-    )
+    print("❌ ОШИБКА: Переменная GEMINI_API_KEY пуста или не передана в Python!")
+    return None
 
   prompt = (
       "Напиши короткую, очень смешную и жизненную шутку (на русском языке,"
@@ -26,24 +24,36 @@ def generate_ai_joke():
 
   try:
     response = requests.post(url, json=payload, headers=headers, timeout=20)
+    print(f"Ответ от Gemini API: {response.status_code}")
+    
     if response.status_code == 200:
       data = response.json()
       joke = data["candidates"][0]["content"]["parts"][0]["text"].strip()
       return joke
+    else:
+      print(f"❌ Ошибка ответа Gemini: {response.text}")
   except Exception as e:
-    print(f"Ошибка ИИ: {e}")
+    print(f"❌ Исключение при запросе к ИИ: {e}")
 
-  return "Когда потратил всю зарплату на бокс, а там снова одни комонки."
+  return None
 
 
 def run():
   print("--- ЗАПУСК БОТА ---")
   if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-    print("Ошибка: Не заданы секреты!")
+    print("Ошибка: Не заданы секреты Telegram!")
     return
 
   joke_text = generate_ai_joke()
-  print(f"Шутка: {joke_text}")
+
+  # Если ИИ не ответил, используем резервную фразу и пишем об этом
+  if not joke_text:
+    print("⚠️ Сработал резервный вариант (ИИ недоступен).")
+    joke_text = "Когда потратил всю зарплату на бокс, а там снова одни комонки."
+  else:
+    print("✅ Успешно сгенерировано через ИИ!")
+
+  print(f"Итоговая шутка: {joke_text}")
 
   intros = [
       "😂 **Чистая жиза из жизни коллекционеров:**",
@@ -64,9 +74,9 @@ def run():
   print(f"Ответ Telegram: {response.status_code}")
 
   if response.status_code == 200:
-    print("Успешно отправлено!")
+    print("Успешно отправлено в канал!")
   else:
-    print("Ошибка отправки в Telegram")
+    print(f"Ошибка отправки в Telegram: {response.text}")
 
 
 run()
