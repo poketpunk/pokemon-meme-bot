@@ -38,7 +38,7 @@ def run():
     with open("sent_memes.txt", "r", encoding="utf-8") as f:
       sent_memes = set(line.strip() for line in f if line.strip())
 
-  # Точная база проверенных мемов и жизненных ситуаций TCG с качественными картинками
+  # Надежные прямые ссылки на картинки с Викисклада (Wikimedia Commons), которые никогда не блокируют запросы
   memes_database = [
       {
           "title": (
@@ -46,15 +46,15 @@ def run():
               " pull only common cards"
           ),
           "image_url": (
-              "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1000&auto=format&fit=crop&q=80"
-          ),  # Игровой/коллекционный вайб
+              "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Pok%C3%A9mon_Trading_Card_Game_logo.svg/800px-Pok%C3%A9mon_Trading_Card_Game_logo.svg.png"
+          ),
           "link": "https://reddit.com/r/pokemonmemes",
       },
       {
           "title": "My wallet crying after looking at the new Pokémon TCG prices",
           "image_url": (
-              "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=1000&auto=format&fit=crop&q=80"
-          ),  # Атмосфера гейминга/коллекционирования
+              "https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/International_Pokémon_logo.svg/800px-International_Pokémon_logo.svg.png"
+          ),
           "link": "https://reddit.com/r/pkmntcgmemes",
       },
       {
@@ -63,8 +63,8 @@ def run():
               " rare"
           ),
           "image_url": (
-              "https://images.unsplash.com/photo-1612287233202-b51b366167ef?w=1000&auto=format&fit=crop&q=80"
-          ),  # Эмоции от игры/карт
+              "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Pokeball.svg/800px-Pokeball.svg.png"
+          ),
           "link": "https://reddit.com/r/pokemonmemes",
       },
   ]
@@ -100,15 +100,22 @@ def run():
       f"🔗 [Сообщество мемов]({link})"
   )
 
-  # Скачиваем картинку
+  # Скачиваем картинку с правильными заголовками
   try:
-    img_response = requests.get(image_url, timeout=15)
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        )
+    }
+    img_response = requests.get(image_url, headers=headers, timeout=15)
     if img_response.status_code != 200:
-      print(f"❌ Ошибка загрузки картинки")
+      print(
+          f"❌ Ошибка загрузки картинки, код ответа: {img_response.status_code}"
+      )
       return
     image_bytes = img_response.content
   except Exception as e:
-    print(f"❌ Ошибка: {e}")
+    print(f"❌ Ошибка скачивания: {e}")
     return
 
   # Отправляем в Telegram
@@ -118,17 +125,17 @@ def run():
       "caption": caption,
       "parse_mode": "Markdown",
   }
-  files = {"photo": ("meme.jpg", image_bytes, "image/jpeg")}
+  files = {"photo": ("meme.png", image_bytes, "image/png")}
 
   response = requests.post(url, data=payload, files=files)
   print(f"Ответ Telegram API: {response.status_code}")
 
   if response.status_code == 200:
-    print("✅ УСПЕШНО! Мем отправлен.")
+    print("✅ УСПЕШНО! Картинка успешно отправлена в канал.")
     with open("sent_memes.txt", "a", encoding="utf-8") as f:
       f.write(meme_data["image_url"] + "\n")
   else:
-    print(f"❌ Ошибка: {response.text}")
+    print(f"❌ Ошибка Telegram: {response.text}")
 
 
 run()
