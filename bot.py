@@ -1,19 +1,9 @@
 import os
 import random
-import urllib.parse
-from bs4 import BeautifulSoup
 import requests
 
 TELEGRAM_BOT_TOKEN = os.getenv("TG_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TG_CHAT")
-
-# Больше классных запросов для поиска мемов
-MEME_QUERIES = [
-    'pokemon memes funny reddit',
-    'pokemon tcg memes collector',
-    'charizard meme pokemon',
-    'funny pokemon cards humor',
-]
 
 
 def translate_text(text):
@@ -37,66 +27,51 @@ def translate_text(text):
   return text
 
 
-def fetch_meme_from_web():
+def fetch_meme_from_reddit():
+  # Обязательно указываем User-Agent, чтобы Reddit не блокировал запросы
   headers = {
       "User-Agent": (
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
-          " like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Bot/1.0"
+          " (PokemonMemeBot)"
       )
   }
+  # Берем горячие посты из сабреддита с мемами по покемонам
+  url = "https://www.reddit.com/r/pokemonmemes/hot.json?limit=25"
 
-  # Перебираем запросы по очереди, пока не найдем рабочий мем с картинкой
-  queries_to_try = random.sample(MEME_QUERIES, len(MEME_QUERIES))
+  try:
+    response = requests.get(url, headers=headers, timeout=15)
+    if response.status_code != 200:
+      print(f"Ошибка доступа к Reddit: {response.status_code}")
+      return None
 
-  for query in queries_to_try:
-    print(f"Пробую найти мем по запросу: {query}")
-    encoded_query = urllib.parse.quote(query)
-    rss_url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-US&gl=US&ceid=US:en"
+    data = response.json()
+    posts = data.get("data", {}).get("children", [])
 
-    try:
-      response = requests.get(rss_url, headers=headers, timeout=15)
-      if response.status_code != 200:
-        continue
+    # Перемешиваем посты, чтобы каждый раз был разный выбор
+    random.shuffle(posts)
 
-      soup = BeautifulSoup(response.text, "xml")
-      items = soup.find_all("item")
+    for post in posts:
+      p_data = post.get("data", {})
+      title = p_data.get("title", "")
+      image_url = p_data.get("url", "")
+      permalink = p_data.get("permalink", "")
+      is_video = p_data.get("is_video", False)
 
-      for item in items[:6]:
-        title = item.title.text if item.title else ""
-        link = item.link.text if item.link else ""
-        if not title or not link:
-          continue
+      # Проверяем, что это прямая картинка (а не видео, текст или ссылка на сторонний сайт)
+      if not is_video and any(
+          image_url.lower().endswith(ext) for ext in [".jpg", ".png", ".jpeg"]
+      ):
+        source_link = f"https://reddit.com{permalink}"
+        return {"title": title, "image_url": image_url, "link": source_link}
 
-        try:
-          art_resp = requests.get(link, headers=headers, timeout=8)
-          if art_resp.status_code != 200:
-            continue
-
-          art_soup = BeautifulSoup(art_resp.text, "html.parser")
-          imgs = art_soup.find_all("img")
-
-          for img in imgs:
-            src = img.get("src", "")
-            if src.startswith("http") and any(
-                ext in src.lower() for ext in [".jpg", ".png", ".jpeg"]
-            ):
-              # Отсеиваем мелкие иконки и логотипы
-              if not any(
-                  bad in src.lower()
-                  for bad in ["avatar", "logo", "icon", "banner", "footer"]
-              ):
-                print(f"✅ Успешно найдена картинка-мем: {src}")
-                return {"title": title, "link": link, "image_url": src}
-        except Exception:
-          continue
-    except Exception as e:
-      print(f"Ошибка при запросе {query}: {e}")
+  except Exception as e:
+    print(f"Ошибка при парсинге Reddit: {e}")
 
   return None
 
 
 def run():
-  print("--- ЗАПУСК БОТА С МЕМАМИ POKÉMON ---")
+  print("--- ЗАПУСК БОТА С МЕМАМИ POKÉMON (REDDIT) ---")
   if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
     print("❌ Ошибка: Не заданы секреты TG_TOKEN или TG_CHAT!")
     return
@@ -106,11 +81,9 @@ def run():
     with open("sent_memes.txt", "r", encoding="utf-8") as f:
       sent_memes = set(line.strip() for line in f if line.strip())
 
-  meme_data = fetch_meme_from_web()
+  meme_data = fetch_meme_from_reddit()
   if not meme_data:
-    print(
-        "ℹ️ В этот раз не удалось выцепить картинку. Попробуем в следующий запуск!"
-    )
+    print("ℹ️ Не удалось найти подходящий мем на Reddit.")
     return
 
   if meme_data["link"] in sent_memes:
@@ -121,7 +94,9 @@ def run():
   image_url = meme_data["image_url"]
   link = meme_data["link"]
 
-  print(f"Публикуем мем: {title}")
+  print(f"✅ Найден мем: {title}")
+  print(f"Картинка: {image_url}")
+
   ru_title = translate_text(title)
 
   intros = [
@@ -134,7 +109,7 @@ def run():
   caption = (
       f"{random.choice(intros)}\n\n"
       f"📌 {ru_title}\n\n"
-      f"🔗 [Источник]({link})"
+      f"🔗 [Источник на Reddit]({link})"
   )
 
   url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
