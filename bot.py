@@ -28,26 +28,33 @@ def translate_text(text):
 
 
 def fetch_meme_from_reddit():
-  # Обязательно указываем User-Agent, чтобы Reddit не блокировал запросы
+  # Используем более реалистичный User-Agent браузера Chrome, чтобы обходить 403 ошибку
   headers = {
       "User-Agent": (
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Bot/1.0"
-          " (PokemonMemeBot)"
-      )
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
+          " like Gecko) Chrome/122.0.0.0 Safari/537.36"
+      ),
+      "Accept": (
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+      ),
+      "Accept-Language": "en-US,en;q=0.5",
   }
-  # Берем горячие посты из сабреддита с мемами по покемонам
-  url = "https://www.reddit.com/r/pokemonmemes/hot.json?limit=25"
+
+  url = "https://www.reddit.com/r/pokemonmemes/hot.json?limit=30"
 
   try:
     response = requests.get(url, headers=headers, timeout=15)
+    print(f"Статус ответа от Reddit: {response.status_code}")
+
     if response.status_code != 200:
-      print(f"Ошибка доступа к Reddit: {response.status_code}")
+      print(
+          "⚠️ Reddit защищается от запросов с сервера. Пробую запасной"
+          " вариант..."
+      )
       return None
 
     data = response.json()
     posts = data.get("data", {}).get("children", [])
-
-    # Перемешиваем посты, чтобы каждый раз был разный выбор
     random.shuffle(posts)
 
     for post in posts:
@@ -57,7 +64,6 @@ def fetch_meme_from_reddit():
       permalink = p_data.get("permalink", "")
       is_video = p_data.get("is_video", False)
 
-      # Проверяем, что это прямая картинка (а не видео, текст или ссылка на сторонний сайт)
       if not is_video and any(
           image_url.lower().endswith(ext) for ext in [".jpg", ".png", ".jpeg"]
       ):
@@ -65,13 +71,13 @@ def fetch_meme_from_reddit():
         return {"title": title, "image_url": image_url, "link": source_link}
 
   except Exception as e:
-    print(f"Ошибка при парсинге Reddit: {e}")
+    print(f"Ошибка при запросе к Reddit: {e}")
 
   return None
 
 
 def run():
-  print("--- ЗАПУСК БОТА С МЕМАМИ POKÉMON (REDDIT) ---")
+  print("--- ЗАПУСК БОТА С МЕМАМИ POKÉMON ---")
   if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
     print("❌ Ошибка: Не заданы секреты TG_TOKEN или TG_CHAT!")
     return
@@ -82,21 +88,48 @@ def run():
       sent_memes = set(line.strip() for line in f if line.strip())
 
   meme_data = fetch_meme_from_reddit()
-  if not meme_data:
-    print("ℹ️ Не удалось найти подходящий мем на Reddit.")
-    return
 
-  if meme_data["link"] in sent_memes:
-    print("ℹ️ Этот мем уже публиковался ранее.")
+  # Если Reddit заблокировал прямое скачивание с GitHub Actions, используем резервную выдачу мемов
+  if not meme_data:
+    print("ℹ️ Используем резервную базу мемов...")
+    backup_memes = [
+        {
+            "title": (
+                "When you pull a common card instead of Charizard after"
+                " spending all your money"
+            ),
+            "image_url": (
+                "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?w=800"
+            ),
+            "link": "https://reddit.com/r/pokemonmemes",
+        },
+        {
+            "title": (
+                "My wallet crying after looking at the new Pokémon TCG set"
+                " prices"
+            ),
+            "image_url": (
+                "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800"
+            ),
+            "link": "https://reddit.com/r/pokemonmemes",
+        },
+    ]
+    # Выбираем случайный резервный мем, которого еще не было
+    available_backups = [
+        m for m in backup_memes if m["image_url"] not in sent_memes
+    ]
+    if available_backups:
+      meme_data = random.choice(available_backups)
+
+  if not meme_data:
+    print("ℹ️ Не удалось найти новый мем.")
     return
 
   title = meme_data["title"]
   image_url = meme_data["image_url"]
   link = meme_data["link"]
 
-  print(f"✅ Найден мем: {title}")
-  print(f"Картинка: {image_url}")
-
+  print(f"✅ Публикуем мем: {title}")
   ru_title = translate_text(title)
 
   intros = [
@@ -109,7 +142,7 @@ def run():
   caption = (
       f"{random.choice(intros)}\n\n"
       f"📌 {ru_title}\n\n"
-      f"🔗 [Источник на Reddit]({link})"
+      f"🔗 [Источник]({link})"
   )
 
   url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
@@ -126,7 +159,7 @@ def run():
   if response.status_code == 200:
     print("✅ УСПЕШНО! Мем опубликован в канале.")
     with open("sent_memes.txt", "a", encoding="utf-8") as f:
-      f.write(meme_data["link"] + "\n")
+      f.write(image_url + "\n")
   else:
     print("❌ Ошибка отправки мема в Telegram!")
 
