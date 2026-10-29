@@ -8,35 +8,34 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 
 def generate_ai_joke():
-  """Генерирует уникальную шутку про Pokémon TCG с помощью Gemini API"""
+  """Генерирует уникальную жизовую шутку про Pokémon TCG на русском языке"""
   if not GEMINI_API_KEY:
     print(
-        "⚠️ GEMINI_API_KEY не найден, используем резервную элитную шутку из"
-        " базы."
+        "⚠️ GEMINI_API_KEY не найден, используем резервную шутку из базы."
     )
     fallback_jokes = [
         (
-            "My brain: 'Save money for rent.'\nMy heart: 'What if the next"
-            " booster pack has a secret rare Charizard?'\nWallet: *cries in"
-            " bankruptcy*"
+            "Мой мозг: 'Давай отложим деньги на квартплату.'\nМое сердце:"
+            " 'А вдруг в следующем бустере секретный Чаризард?'\nКошелек:"
+            " *плачет в углу*"
         ),
         (
-            "When someone handles your PSA 10 graded card without gloves and"
-            " you have to consider legal action."
+            "Когда пытаешься объяснить маме, почему этот кусочек картона стоит"
+            " дороже подержанной иномарки."
         ),
         (
-            "The 4 stages of TCG collecting: Hope, Regret, Opening another"
-            " booster box, Repeat."
+            "4 стадии коллекционера TCG: Надежда, Боль от комонок, Открытие"
+            " еще одного бустера, Повторить."
         ),
     ]
     return random.choice(fallback_jokes)
 
   prompt = (
-      "Write a short, hilarious, and relatable English meme text (2-4 lines)"
-      " about the pain and obsession of collecting Pokémon TCG cards, opening"
-      " booster packs, spending all money on cardboard, or dealing with rare"
-      " cards. Keep it authentic to Reddit meme culture. Do not include"
-      " introductory filler text, just give the joke itself."
+      "Напиши короткую, очень смешную и жизненную шутку или мем-текст"
+      " (на русском языке, 2-4 строчки) про боль коллекционеров карточек"
+      " Pokémon TCG, открытие бустеров, слив всех денег на картон или"
+      " охоту за редкими картами. Шутка должна быть понятна русскоязычным"
+      " коллекционерам. Без лишних вводных фраз, только текст шутки."
   )
 
   url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
@@ -55,26 +54,26 @@ def generate_ai_joke():
     print(f"❌ Ошибка соединения с ИИ: {e}")
 
   return (
-      "When you spend your last money on a booster box and pull 50 common"
-      " Zubats."
+      "Когда потратил всю зарплату на коллекционный бокс, а там снова одни"
+      " обычные покемоны."
   )
 
 
 def run():
-  print("--- ЗАПУСК ИИ-БОТА С БЕСКОНЕЧНЫМИ МЕМАМИ ---")
+  print("--- ЗАПУСК АВТОНОМНОГО КАНАЛ-БОТА ---")
   if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
     print("❌ Ошибка: Не заданы секреты TG_TOKEN или TG_CHAT!")
     return
 
-  # Генерируем уникальную шутку на лету
+  # Генерируем уникальную шутку на русском
   joke_text = generate_ai_joke()
-  print(f"🔥 Сгенерирована свежая шутка:\n{joke_text}")
+  print(f"🔥 Сгенерирована шутка:\n{joke_text}")
 
   intros = [
-      "😂 **AI-generated TCG pain:**",
-      "💀 **Fresh from the neural network collector brain:**",
-      "📦 **Today's wisdom for Pokémon card addicts:**",
-      "🔥 **Generated pure unfiltered collector reality:**",
+      "😂 **Чистая жиза из жизни коллекционеров:**",
+      "💀 **Когда реальность бьет сильнее, чем редкая карта:**",
+      "📦 **Будни охотника за редкими сетами TCG:**",
+      "🔥 **Классика любого бандла:**",
   ]
 
   message = (
@@ -88,15 +87,3 @@ def run():
       "chat_id": TELEGRAM_CHAT_ID,
       "text": message,
       "parse_mode": "Markdown",
-  }
-
-  response = requests.post(url, json=payload)
-  print(f"Ответ Telegram API: {response.status_code}")
-
-  if response.status_code == 200:
-    print("✅ УСПЕШНО! Уникальный сгенерированный мем опубликован в канале.")
-  else:
-    print(f"❌ Ошибка Telegram: {response.text}")
-
-
-run()
