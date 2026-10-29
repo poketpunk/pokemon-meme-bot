@@ -38,7 +38,7 @@ def run():
     with open("sent_memes.txt", "r", encoding="utf-8") as f:
       sent_memes = set(line.strip() for line in f if line.strip())
 
-  # Надежные прямые ссылки на картинки с Викисклада (Wikimedia Commons), которые никогда не блокируют запросы
+  # Проверенные прямые ссылки на изображения с надежных открытых источников
   memes_database = [
       {
           "title": (
@@ -100,11 +100,12 @@ def run():
       f"🔗 [Сообщество мемов]({link})"
   )
 
-  # Скачиваем картинку с правильными заголовками
+  # Скачиваем картинку с полноценными заголовками браузера
   try:
     headers = {
         "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
+            " like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
     }
     img_response = requests.get(image_url, headers=headers, timeout=15)
