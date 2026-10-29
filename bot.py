@@ -38,7 +38,7 @@ def run():
     with open("sent_memes.txt", "r", encoding="utf-8") as f:
       sent_memes = set(line.strip() for line in f if line.strip())
 
-  # Проверенные прямые ссылки на изображения с надежных открытых источников
+  # Используем прямые ссылки на картинки с GitHub-репозиториев (Raw), которые отдают файлы мгновенно без блокировок
   memes_database = [
       {
           "title": (
@@ -46,37 +46,61 @@ def run():
               " pull only common cards"
           ),
           "image_url": (
-              "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Pok%C3%A9mon_Trading_Card_Game_logo.svg/800px-Pok%C3%A9mon_Trading_Card_Game_logo.svg.png"
-          ),
+              "https://raw.githubusercontent.com/octocat/Spoon-Knife/main/index.html"
+          ),  # Заменим на стабильный URL ниже
           "link": "https://reddit.com/r/pokemonmemes",
+      },
+  ]
+
+  # Переведем на стопроцентно стабильные прямые картинки-постеры карточек
+  reliable_memes = [
+      {
+          "title": (
+              "When you spend your entire paycheck on Pokémon booster packs and"
+              " pull only common cards"
+          ),
+          "image_url": (
+              "https://images.dog.ceo/breeds/hound-english/n02089973_1.jpg"
+          ),  # Тестовая стабильная картинка, заменим на тематику
+          "link": "https://reddit.com/r/pokemonmemes",
+      }
+  ]
+
+  # Давай сделаем еще проще и надежнее: используем прямые картинки из репозитория Pokémon TCG API (открытые CDN)
+  final_memes = [
+      {
+          "title": (
+              "When you spend your entire paycheck on Pokémon booster packs and"
+              " pull only common cards"
+          ),
+          "image_url": (
+              "https://images.pokemontcg.io/base1/4_hires.png"
+          ),  # Официальная карточка Charizard (хитрейший и самый желанный мем!)
+          "link": "https://images.pokemontcg.io/base1/4.png",
       },
       {
           "title": "My wallet crying after looking at the new Pokémon TCG prices",
-          "image_url": (
-              "https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/International_Pokémon_logo.svg/800px-International_Pokémon_logo.svg.png"
-          ),
-          "link": "https://reddit.com/r/pkmntcgmemes",
+          "image_url": "https://images.pokemontcg.io/base1/15_hires.png",  # Venusaur
+          "link": "https://images.pokemontcg.io/base1/15.png",
       },
       {
           "title": (
               "That friend who opens his very first pack and gets a secret"
               " rare"
           ),
-          "image_url": (
-              "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Pokeball.svg/800px-Pokeball.svg.png"
-          ),
-          "link": "https://reddit.com/r/pokemonmemes",
+          "image_url": "https://images.pokemontcg.io/base1/2_hires.png",  # Blastoise
+          "link": "https://images.pokemontcg.io/base1/2.png",
       },
   ]
 
   available_memes = [
-      m for m in memes_database if m["image_url"] not in sent_memes
+      m for m in final_memes if m["image_url"] not in sent_memes
   ]
   if not available_memes:
     print("🔄 Сбрасываем историю отправленных мемов...")
     if os.path.exists("sent_memes.txt"):
       os.remove("sent_memes.txt")
-    available_memes = memes_database
+    available_memes = final_memes
 
   meme_data = random.choice(available_memes)
 
@@ -84,31 +108,30 @@ def run():
   image_url = meme_data["image_url"]
   link = meme_data["link"]
 
-  print(f"🔥 Публикуем мем: {title}")
+  print(f"🔥 Публикуем карточку: {title}")
   ru_title = translate_text(title)
 
   intros = [
       "😂 **Чистая жиза из жизни коллекционеров:**",
       "🔥 **Когда реальность бьет сильнее, чем редкая карта:**",
       "📦 **Будни охотника за редкими сетами Pokémon TCG:**",
-      "🐸 **Классика сообщества покемонов:**",
+      "🐸 **Легендарные находки в бустерах:**",
   ]
 
   caption = (
       f"{random.choice(intros)}\n\n"
       f"📌 **{ru_title}**\n\n"
-      f"🔗 [Сообщество мемов]({link})"
+      f"🔗 [Официальная база карт]({link})"
   )
 
-  # Скачиваем картинку с полноценными заголовками браузера
+  # Скачиваем картинку
   try:
     headers = {
         "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,"
-            " like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         )
     }
-    img_response = requests.get(image_url, headers=headers, timeout=15)
+    img_response = requests.get(image_url, headers=headers, timeout=20)
     if img_response.status_code != 200:
       print(
           f"❌ Ошибка загрузки картинки, код ответа: {img_response.status_code}"
@@ -126,13 +149,13 @@ def run():
       "caption": caption,
       "parse_mode": "Markdown",
   }
-  files = {"photo": ("meme.png", image_bytes, "image/png")}
+  files = {"photo": ("card.png", image_bytes, "image/png")}
 
   response = requests.post(url, data=payload, files=files)
   print(f"Ответ Telegram API: {response.status_code}")
 
   if response.status_code == 200:
-    print("✅ УСПЕШНО! Картинка успешно отправлена в канал.")
+    print("✅ УСПЕШНО! Карточка успешно отправлена в канал.")
     with open("sent_memes.txt", "a", encoding="utf-8") as f:
       f.write(meme_data["image_url"] + "\n")
   else:
