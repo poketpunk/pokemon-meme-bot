@@ -1,5 +1,6 @@
 import os
 import random
+import time
 from google import genai
 import requests
 
@@ -21,19 +22,23 @@ def generate_ai_joke():
       " бустеров или слив денег на картон. Без лишних вводных фраз."
   )
 
-  # Используем строго актуальную и требуемую сервером версию gemini-3.8-flash
   model_name = "gemini-3.8-flash"
 
-  try:
-    print(f"Попытка генерации через модель: {model_name}")
-    response = client.models.generate_content(
-        model=model_name,
-        contents=prompt,
-    )
-    if response and response.text:
-      return response.text.strip()
-  except Exception as e:
-    print(f"❌ Ошибка при запросе к модели {model_name}: {e}")
+  # Делаем до 3 попыток на случай кратковременной перегрузки сервера
+  for attempt in range(1, 4):
+    try:
+      print(f"Попытка генерации через {model_name} (попытка {attempt})...")
+      response = client.models.generate_content(
+          model=model_name,
+          contents=prompt,
+      )
+      if response and response.text:
+        return response.text.strip()
+    except Exception as e:
+      print(f"❌ Ошибка на попытке {attempt}: {e}")
+      # Если сервер перегружен, ждем 4 секунды перед повтором
+      if attempt < 3:
+        time.sleep(4)
 
   return None
 
@@ -46,11 +51,11 @@ def run():
 
   joke_text = generate_ai_joke()
 
-  # Если ИИ недоступен, честно отменяем публикацию без заглушек
+  # Если все попытки провалились, честно отменяем публикацию без заглушек
   if not joke_text:
     print(
-        "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось получить шутку от ИИ. Публикация"
-        " отменена."
+        "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось получить шутку от ИИ после 3 попыток."
+        " Публикация отменена."
     )
     return
 
