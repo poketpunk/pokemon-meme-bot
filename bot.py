@@ -6,29 +6,8 @@ TELEGRAM_BOT_TOKEN = os.getenv("TG_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TG_CHAT")
 
 
-def translate_text(text):
-  if not text:
-    return ""
-  try:
-    url = "https://translate.googleapis.com/translate_a/single"
-    params = {
-        "client": "gtx",
-        "sl": "en",
-        "tl": "ru",
-        "dt": "t",
-        "q": text[:4000],
-    }
-    response = requests.get(url, params=params, timeout=10)
-    if response.status_code == 200:
-      data = response.json()
-      return "".join([item[0] for item in data[0] if item[0]])
-  except Exception as e:
-    print(f"Ошибка перевода: {e}")
-  return text
-
-
 def run():
-  print("--- ЗАПУСК НАСТОЯЩЕГО МЕМ-БОТА ---")
+  print("--- ЗАПУСК БОТА С ОРИГИНАЛЬНЫМИ МЕМАМИ ---")
   if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
     print("❌ Ошибка: Не заданы секреты TG_TOKEN или TG_CHAT!")
     return
@@ -38,7 +17,7 @@ def run():
     with open("sent_memes.txt", "r", encoding="utf-8") as f:
       sent_memes = set(line.strip() for line in f if line.strip())
 
-  # Железобетонная база отборных мемов про Pokémon TCG с прямыми стабильными ссылками на картинки
+  # Золотой фонд мемов на английском — без искажений и кривого перевода
   real_memes = [
       {
           "title": (
@@ -98,55 +77,25 @@ def run():
   link = meme_data["link"]
 
   print(f"🔥 Публикуем мем: {title}")
-  ru_title = translate_text(title)
 
   intros = [
-      "😂 **Чистая жизненная классика:**",
-      "💀 **Когда реальность бьет сильнее, чем супе-редкая карта:**",
-      "📦 **Боль каждого коллекционера TCG:**",
-      "🔥 **Типичный вечер охотника за раритетами:**",
+      "😂 **Pure TCG collector vibes:**",
+      "💀 **When reality hits harder than a rare card:**",
+      "📦 **Every card collector's pain:**",
+      "🔥 **Typical pack opening experience:**",
   ]
 
   caption = (
       f"{random.choice(intros)}\n\n"
-      f"📌 **{ru_title}**\n\n"
-      f"🔗 [Источник мема]({link})"
+      f"📌 **{title}**\n\n"
+      f"🔗 [Meme Source]({link})"
   )
 
-  # Надежное скачивание картинки
+  # Скачиваем картинку
   try:
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         )
     }
-    img_response = requests.get(image_url, headers=headers, timeout=20)
-    if img_response.status_code != 200:
-      print(f"❌ Ошибка загрузки картинки: {img_response.status_code}")
-      return
-    image_bytes = img_response.content
-  except Exception as e:
-    print(f"❌ Ошибка скачивания: {e}")
-    return
-
-  # Отправка в Telegram
-  url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
-  payload = {
-      "chat_id": TELEGRAM_CHAT_ID,
-      "caption": caption,
-      "parse_mode": "Markdown",
-  }
-  files = {"photo": ("meme.jpg", image_bytes, "image/jpeg")}
-
-  response = requests.post(url, data=payload, files=files)
-  print(f"Ответ Telegram API: {response.status_code}")
-
-  if response.status_code == 200:
-    print("✅ УСПЕШНО! Мем отправлен в канал.")
-    with open("sent_memes.txt", "a", encoding="utf-8") as f:
-      f.write(meme_data["image_url"] + "\n")
-  else:
-    print(f"❌ Ошибка Telegram: {response.text}")
-
-
-run()
+    img_response = requests.get(image_url, headers=headers, timeout=2
