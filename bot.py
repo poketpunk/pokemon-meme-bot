@@ -1,6 +1,7 @@
 import os
 import random
-import time
+from google import genai
+from google.genai import errors
 import requests
 
 TELEGRAM_BOT_TOKEN = os.getenv("TG_TOKEN")
@@ -10,8 +11,11 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 def generate_ai_joke():
   if not GEMINI_API_KEY:
-    print("❌ ОШИБКА: Переменная GEMINI_API_KEY пуста или не передана в Python!")
+    print("❌ ОШИБКА: Переменная GEMINI_API_KEY не задана!")
     return None
+
+  # Инициализируем официальный клиент Google GenAI
+  client = genai.Client(api_key=GEMINI_API_KEY)
 
   prompt = (
       "Напиши короткую, очень смешную и жизненную шутку (на русском языке,"
@@ -19,30 +23,21 @@ def generate_ai_joke():
       " бустеров или слив денег на картон. Без лишних вводных фраз."
   )
 
-  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={GEMINI_API_KEY}"
-  headers = {"Content-Type": "application/json"}
-  payload = {"contents": [{"parts": [{"text": prompt}]}]}
+  # Пробуем получить ответ через официальный клиент (он сам выбирает актуальную модель)
+  models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash"]
 
-  for attempt in range(1, 4):
+  for model_name in models_to_try:
     try:
-      print(f"Попытка запроса к Gemini 3.8 Flash №{attempt}...")
-      response = requests.post(url, json=payload, headers=headers, timeout=40)
-      print(f"Ответ от Gemini API: {response.status_code}")
-
-      if response.status_code == 200:
-        data = response.json()
-        joke = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        return joke
-      else:
-        print(f"❌ Ошибка ответа Gemini: {response.text}")
-        if response.status_code in [503, 429]:
-          time.sleep(3)
-          continue
-        else:
-          break
+      print(f"Попытка генерации через модель: {model_name}")
+      response = client.models.generate_content(
+          model=model_name,
+          contents=prompt,
+      )
+      if response and response.text:
+        return response.text.strip()
     except Exception as e:
-      print(f"❌ Исключение при запросе к ИИ: {e}")
-      time.sleep(3)
+      print(f"❌ Ошибка с моделью {model_name}: {e}")
+      continue
 
   return None
 
@@ -55,7 +50,7 @@ def run():
 
   joke_text = generate_ai_joke()
 
-  # Если ИИ не ответил, отменяем публикацию полностью
+  # Если ИИ не ответил, честно отменяем публикацию без заглушек
   if not joke_text:
     print(
         "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось получить шутку от ИИ. Публикация"
@@ -63,7 +58,7 @@ def run():
     )
     return
 
-  print(f"✅ Успешно сгенерировано через Gemini 3.8 Flash:\n{joke_text}")
+  print(f"✅ Успешно сгенерировано:\n{joke_text}")
 
   intros = [
       "😂 **Чистая жиза из жизни коллекционеров:**",
