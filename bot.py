@@ -65,7 +65,6 @@ def run():
     print("❌ Ошибка: Не заданы секреты TG_TOKEN или TG_CHAT!")
     return
 
-  # Генерируем уникальную шутку на русском
   joke_text = generate_ai_joke()
   print(f"🔥 Сгенерирована шутка:\n{joke_text}")
 
@@ -87,3 +86,12 @@ def run():
       "chat_id": TELEGRAM_CHAT_ID,
       "text": message,
       "parse_mode": "Markdown",
+  }
+
+  response = requests.post(url, json=payload)
+  print(f"Ответ Telegram API: {response.status_code}")
+
+  if response.status_code == 200:
+    print("✅ УСПЕШНО! Пост опубликован в канале.")
+  else:
+    print(f"❌ Ошибка Telegram: {response
