@@ -7,11 +7,12 @@ import requests
 TELEGRAM_BOT_TOKEN = os.getenv("TG_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TG_CHAT")
 
-# Поисковые запросы для поиска свежих мемов и комиксов по покемонам
+# Больше классных запросов для поиска мемов
 MEME_QUERIES = [
-    'funny pokemon memes reddit',
-    'best pokemon tcg memes',
-    'pokemon card collector meme',
+    'pokemon memes funny reddit',
+    'pokemon tcg memes collector',
+    'charizard meme pokemon',
+    'funny pokemon cards humor',
 ]
 
 
@@ -44,39 +45,52 @@ def fetch_meme_from_web():
       )
   }
 
-  query = random.choice(MEME_QUERIES)
-  encoded_query = urllib.parse.quote(query)
-  rss_url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-US&gl=US&ceid=US:en"
+  # Перебираем запросы по очереди, пока не найдем рабочий мем с картинкой
+  queries_to_try = random.sample(MEME_QUERIES, len(MEME_QUERIES))
 
-  try:
-    response = requests.get(rss_url, headers=headers, timeout=15)
-    if response.status_code == 200:
+  for query in queries_to_try:
+    print(f"Пробую найти мем по запросу: {query}")
+    encoded_query = urllib.parse.quote(query)
+    rss_url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-US&gl=US&ceid=US:en"
+
+    try:
+      response = requests.get(rss_url, headers=headers, timeout=15)
+      if response.status_code != 200:
+        continue
+
       soup = BeautifulSoup(response.text, "xml")
       items = soup.find_all("item")
 
-      for item in items[:5]:
+      for item in items[:6]:
         title = item.title.text if item.title else ""
         link = item.link.text if item.link else ""
-        if title and link:
-          # Переходим по ссылке статьи, чтобы найти картинку-мем
-          art_resp = requests.get(link, headers=headers, timeout=10)
-          if art_resp.status_code == 200:
-            art_soup = BeautifulSoup(art_resp.text, "html.parser")
-            imgs = art_soup.find_all("img")
-            for img in imgs:
-              src = img.get("src", "")
-              # Ищем подходящую картинку (не иконку сайта)
-              if src.startswith("http") and any(
-                  ext in src.lower() for ext in [".jpg", ".png", ".jpeg"]
+        if not title or not link:
+          continue
+
+        try:
+          art_resp = requests.get(link, headers=headers, timeout=8)
+          if art_resp.status_code != 200:
+            continue
+
+          art_soup = BeautifulSoup(art_resp.text, "html.parser")
+          imgs = art_soup.find_all("img")
+
+          for img in imgs:
+            src = img.get("src", "")
+            if src.startswith("http") and any(
+                ext in src.lower() for ext in [".jpg", ".png", ".jpeg"]
+            ):
+              # Отсеиваем мелкие иконки и логотипы
+              if not any(
+                  bad in src.lower()
+                  for bad in ["avatar", "logo", "icon", "banner", "footer"]
               ):
-                if (
-                    "avatar" not in src
-                    and "logo" not in src
-                    and "icon" not in src
-                ):
-                  return {"title": title, "link": link, "image_url": src}
-  except Exception as e:
-    print(f"Ошибка поиска мема: {e}")
+                print(f"✅ Успешно найдена картинка-мем: {src}")
+                return {"title": title, "link": link, "image_url": src}
+        except Exception:
+          continue
+    except Exception as e:
+      print(f"Ошибка при запросе {query}: {e}")
 
   return None
 
@@ -94,7 +108,9 @@ def run():
 
   meme_data = fetch_meme_from_web()
   if not meme_data:
-    print("ℹ️ Не удалось найти подходящий мем в этот раз.")
+    print(
+        "ℹ️ В этот раз не удалось выцепить картинку. Попробуем в следующий запуск!"
+    )
     return
 
   if meme_data["link"] in sent_memes:
@@ -105,7 +121,7 @@ def run():
   image_url = meme_data["image_url"]
   link = meme_data["link"]
 
-  print(f"Найден мем: {title}")
+  print(f"Публикуем мем: {title}")
   ru_title = translate_text(title)
 
   intros = [
@@ -121,7 +137,6 @@ def run():
       f"🔗 [Источник]({link})"
   )
 
-  # Публикация картинки с мемом в Telegram
   url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
   payload = {
       "chat_id": TELEGRAM_CHAT_ID,
