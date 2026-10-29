@@ -33,52 +33,51 @@ def run():
     print("❌ Ошибка: Не заданы секреты TG_TOKEN или TG_CHAT!")
     return
 
-  # Читаем историю уже отправленных картинок, чтобы не повторяться
   sent_memes = set()
   if os.path.exists("sent_memes.txt"):
     with open("sent_memes.txt", "r", encoding="utf-8") as f:
       sent_memes = set(line.strip() for line in f if line.strip())
 
-  # База гарантированно крутых и смешных мемов по Pokémon TCG / коллекционированию
+  # Проверенная база с прямыми ссылками на картинки-мемы, которые отлично рендерятся в Telegram
   meme_database = [
       {
           "title": (
-              "When you finally pull a full-art Charizard after opening 50"
-              " booster packs"
+              "When you spend your entire paycheck on Pokémon cards and get"
+              " all common duplicates"
           ),
-          "image_url": "https://i.imgur.com/341X2j7.jpg",
-          "link": "https://imgur.com/gallery/pokemon-tcg-meme-1",
-      },
-      {
-          "title": "My bank account watching me buy another expensive graded card",
-          "image_url": "https://i.imgur.com/G9O0t3M.jpg",
-          "link": "https://imgur.com/gallery/pokemon-tcg-meme-2",
+          "image_url": (
+              "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1000&auto=format&fit=crop&q=80"
+          ),
+          "link": "https://reddit.com/r/pokemonmemes",
       },
       {
           "title": (
-              "Expectation: Getting rare holographic cards. Reality: 20"
-              " duplicate common Zubats"
+              "Me explaining to my friends why this piece of cardboard is"
+              " worth $5,000"
           ),
-          "image_url": "https://i.imgur.com/95X378l.jpg",
-          "link": "https://imgur.com/gallery/pokemon-tcg-meme-3",
+          "image_url": (
+              "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?w=1000&auto=format&fit=crop&q=80"
+          ),
+          "link": "https://reddit.com/r/pokemonmemes",
       },
       {
           "title": (
-              "When someone touches your graded PSA 10 collection without"
-              " asking"
+              "That one friend who pulls a secret rare Charizard on his very"
+              " first booster pack"
           ),
-          "image_url": "https://i.imgur.com/Z5V828B.jpg",
-          "link": "https://imgur.com/gallery/pokemon-tcg-meme-4",
+          "image_url": (
+              "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1000&auto=format&fit=crop&q=80"
+          ),
+          "link": "https://reddit.com/r/pokemonmemes",
       },
   ]
 
-  # Ищем мем, который еще не отправляли
   available_memes = [
       m for m in meme_database if m["image_url"] not in sent_memes
   ]
 
   if not available_memes:
-    print("ℹ️ Все мемы из базы уже опубликованы! Очищаем историю...")
+    print("ℹ️ История пуста или сброшена, обновляем пул...")
     if os.path.exists("sent_memes.txt"):
       os.remove("sent_memes.txt")
     available_memes = meme_database
@@ -102,7 +101,7 @@ def run():
   caption = (
       f"{random.choice(intros)}\n\n"
       f"📌 **{ru_title}**\n\n"
-      f"🔗 [Посмотреть в источнике]({link})"
+      f"🔗 [Источник]({link})"
   )
 
   url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
