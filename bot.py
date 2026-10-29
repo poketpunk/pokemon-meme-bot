@@ -19,16 +19,14 @@ def generate_ai_joke():
       " бустеров или слив денег на картон. Без лишних вводных фраз."
   )
 
-  # Используем стабильную версию flash-модели
-  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+  url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={GEMINI_API_KEY}"
   headers = {"Content-Type": "application/json"}
   payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
-  # Делаем до 3 попыток в случае ошибки высокой нагрузки (503)
   for attempt in range(1, 4):
     try:
-      print(f"Попытка запроса к Gemini №{attempt}...")
-      response = requests.post(url, json=payload, headers=headers, timeout=30)
+      print(f"Попытка запроса к Gemini 3.8 Flash №{attempt}...")
+      response = requests.post(url, json=payload, headers=headers, timeout=40)
       print(f"Ответ от Gemini API: {response.status_code}")
 
       if response.status_code == 200:
@@ -37,10 +35,11 @@ def generate_ai_joke():
         return joke
       else:
         print(f"❌ Ошибка ответа Gemini: {response.text}")
-        # Если сервер перегружен (503), ждем 3 секунды и пробуем снова
-        if response.status_code == 503:
+        if response.status_code in [503, 429]:
           time.sleep(3)
           continue
+        else:
+          break
     except Exception as e:
       print(f"❌ Исключение при запросе к ИИ: {e}")
       time.sleep(3)
@@ -56,13 +55,15 @@ def run():
 
   joke_text = generate_ai_joke()
 
+  # Если ИИ не ответил, отменяем публикацию полностью
   if not joke_text:
-    print("⚠️ Сработал резервный вариант (ИИ временно перегружен).")
-    joke_text = "Когда потратил всю зарплату на бокс, а там снова одни комонки."
-  else:
-    print("✅ Успешно сгенерировано через ИИ!")
+    print(
+        "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось получить шутку от ИИ. Публикация"
+        " отменена."
+    )
+    return
 
-  print(f"Итоговая шутка: {joke_text}")
+  print(f"✅ Успешно сгенерировано через Gemini 3.8 Flash:\n{joke_text}")
 
   intros = [
       "😂 **Чистая жиза из жизни коллекционеров:**",
